@@ -8,5 +8,6 @@ public class Main {
         int number = scanner.nextInt();
         Generator generator = new Generator();
         generator.generate(number);
+        ConnectionPool.getInstance().destroyConnections();
     }
 }

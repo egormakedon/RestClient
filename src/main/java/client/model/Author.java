@@ -8,6 +8,12 @@ public class Author {
     private String surname;
     private String country;
 
+    public Author() {
+        name = "";
+        surname = "";
+        country = "";
+    }
+
     void reset() {
         authorId = 0;
         name = "";

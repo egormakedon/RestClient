@@ -1,50 +1,50 @@
 package client.view;
 
 import client.Controller;
-import client.model.CurrentArticle;
-import client.model.EditingState;
+import client.model.*;
 
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.io.File;
 import java.util.Observable;
 import java.util.Observer;
 
 public class Frame implements Observer {
-    private static final String IMAGE_ICON_PATH = File.separator + "img" + File.separator + "pascalIco.png";
-
     private JFrame frame;
     private JPanel mainPanel;
     private Header header;
 
     private JLabel tittle;
     private JTextArea body;
-    private JLabel image;
-    private JLabel name;
+    private JLabel date;
+
+    private JLabel authorName;
     private JLabel surname;
     private JLabel country;
-    private JLabel date;
+
+    private JLabel resourceName;
+    private JLabel url;
 
     public Frame() {
         frame = new JFrame();
         mainPanel = new JPanel();
-        setFrame();
-
         header = new Header();
-        setHeader();
-
-        setButtonManager();
 
         tittle = new JLabel();
         body = new JTextArea();
-        name = new JLabel();
+        date = new JLabel();
+
+        authorName = new JLabel();
         surname = new JLabel();
         country = new JLabel();
-        date = new JLabel();
-        image = new JLabel();
 
+        resourceName = new JLabel();
+        url = new JLabel();
+
+        setFrame();
+        setHeader();
+        setButtonManager();
         setMainPanel();
     }
 
@@ -54,26 +54,20 @@ public class Frame implements Observer {
 
     @Override
     public void update(Observable o, Object arg) {
-        CurrentArticle currentArticle = CurrentArticle.getInstance();
+        Article article = CurrentArticle.getInstance().getArticle();
 
-        tittle.setText("title: " + currentArticle.getTitle() + "; ");
-        body.setText(currentArticle.getBody());
+        tittle.setText("title: " + article.getTitle() + "; ");
+        body.setText(article.getBody());
+        date.setText("date: " + article.getDate().toString() + ";");
 
-//        String imagePath = currentArticle.getPath();
-//        File file = new File(imagePath);
-//        BufferedImage bufferedImage = new BufferedImage(50, 50, BufferedImage.TYPE_INT_ARGB);
-//        try {
-//            bufferedImage = ImageIO.read(file);
-//        } catch (IOException e) {
-//            LOGGER.fatal(e);
-//            throw new RuntimeException(e);
-//        }
-//        image = new JLabel(new ImageIcon(bufferedImage));
+        Author author = article.getAuthor();
+        authorName.setText("author name: " + author.getName() + "; ");
+        surname.setText("author surname: " + author.getSurname() + "; ");
+        country.setText("author country: " + author.getCountry() + "; ");
 
-        name.setText("author name: " + currentArticle.getName() + "; ");
-        surname.setText("author surname: " + currentArticle.getSurname() + "; ");
-        country.setText("author country: " + currentArticle.getCountry() + "; ");
-        date.setText("date: " + currentArticle.getDate().toString() + ";");
+        Resource resource = article.getResource();
+        resourceName.setText("resource name: " + resource.getName() + "; ");
+        url.setText("url: " + resource.getUrl() + ";");
     }
 
     private void setFrame() {
@@ -82,7 +76,6 @@ public class Frame implements Observer {
         frame.setMinimumSize(new Dimension(1050, 700));
         frame.setResizable(true);
         frame.setLocationRelativeTo(null);
-        frame.setIconImage(new ImageIcon(this.getClass().getResource(IMAGE_ICON_PATH)).getImage());
 
         mainPanel.setLayout(new BorderLayout());
         frame.add(mainPanel, BorderLayout.CENTER);
@@ -104,17 +97,9 @@ public class Frame implements Observer {
         JButton eraseButton = new JButton();
         eraseButton.setText("erase");
 
-        JButton changeServerTypeButton = new JButton();
-        changeServerTypeButton.setText("change server type");
-
-        JLabel serverTypeLabel = new JLabel();
-        serverTypeLabel.setText("RPC");
-
         panel.add(addButton);
         panel.add(editButton);
         panel.add(eraseButton);
-        panel.add(changeServerTypeButton);
-        panel.add(serverTypeLabel);
         mainPanel.add(panel, BorderLayout.NORTH);
 
         addButton.addActionListener(new ActionListener() {
@@ -133,18 +118,20 @@ public class Frame implements Observer {
         editButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                if (CurrentArticle.getInstance().getTitle().equals("")) {
+                if (CurrentArticle.getInstance().getArticle().getTitle().equals("")) {
                     return;
                 }
 
                 EditingState editingState = EditingState.getInstance();
                 if (editingState.getState().equals(EditingState.State.ENABLE)) {
-                    int id = CurrentArticle.getInstance().getArticleId();
-                    Controller.getInstance().update(id, body.getText());
+                    int id = CurrentArticle.getInstance().getArticle().getArticleId();
+
+                    String answer = Controller.getInstance().update(id, body.getText());
                     editingState.setState(EditingState.State.DISABLE);
                     editButton.setText("edit");
                     body.setEnabled(false);
                     body.setBackground(Color.BLACK);
+                    JOptionPane.showMessageDialog(frame, answer);
                 } else if (editingState.getState().equals(EditingState.State.DISABLE)) {
                     editingState.setState(EditingState.State.ENABLE);
                     editButton.setText("save");
@@ -157,7 +144,7 @@ public class Frame implements Observer {
         eraseButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                if (CurrentArticle.getInstance().getTitle().equals("")) {
+                if (CurrentArticle.getInstance().getArticle().getTitle().equals("")) {
                     return;
                 }
 
@@ -168,35 +155,25 @@ public class Frame implements Observer {
 
                 int result = JOptionPane.showConfirmDialog(frame, "Are you sure?");
                 if (result == 0) {
-                    int id = CurrentArticle.getInstance().getArticleId();
+                    int id = CurrentArticle.getInstance().getArticle().getArticleId();
                     String answer = Controller.getInstance().delete(id);
                     header.update();
                     JOptionPane.showMessageDialog(frame, answer);
                 }
             }
         });
-
-        changeServerTypeButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                EditingState editingState = EditingState.getInstance();
-                if (editingState.getState().equals(EditingState.State.ENABLE)) {
-                    return;
-                }
-
-                ServerType serverType = ServerType.getInstance();
-                serverType.changeServerType();
-                serverTypeLabel.setText(serverType.getServerType().toString());
-            }
-        });
     }
 
     private void setMainPanel() {
         tittle.setFont(new Font("Times New Roman", Font.BOLD, 15));
-        name.setFont(new Font("Times New Roman", Font.BOLD, 15));
+        date.setFont(new Font("Times New Roman", Font.BOLD, 15));
+
+        authorName.setFont(new Font("Times New Roman", Font.BOLD, 15));
         surname.setFont(new Font("Times New Roman", Font.BOLD, 15));
         country.setFont(new Font("Times New Roman", Font.BOLD, 15));
-        date.setFont(new Font("Times New Roman", Font.BOLD, 15));
+
+        resourceName.setFont(new Font("Times New Roman", Font.BOLD, 15));
+        url.setFont(new Font("Times New Roman", Font.BOLD, 15));
 
         body.setFont(new Font("Times New Roman", Font.ITALIC, 11));
         body.setEnabled(false);
@@ -207,12 +184,13 @@ public class Frame implements Observer {
         titlePanel.setSize(new Dimension(0, 50));
         titlePanel.setPreferredSize(new Dimension(0, 50));
 
-//        titlePanel.add(image);
         titlePanel.add(tittle);
-        titlePanel.add(name);
+        titlePanel.add(date);
+        titlePanel.add(authorName);
         titlePanel.add(surname);
         titlePanel.add(country);
-        titlePanel.add(date);
+        titlePanel.add(resourceName);
+        titlePanel.add(url);
 
         JPanel panel = new JPanel();
         panel.setLayout(new BorderLayout());

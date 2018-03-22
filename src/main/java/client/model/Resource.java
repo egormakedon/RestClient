@@ -7,6 +7,11 @@ public class Resource {
     private String name;
     private String url;
 
+    public Resource() {
+        name = "";
+        url = "";
+    }
+
     void reset() {
         resourceId = 0;
         name = "";
